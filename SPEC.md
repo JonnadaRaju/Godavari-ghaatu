@@ -1,4 +1,4 @@
-# 🛒 Traditional Foods E-Commerce Website
+# 🛒 Godavari Ghaatu E-Commerce Website
 
 An end-to-end **e-commerce platform for traditional homemade foods**, including **pickles, spices, healthy laddu’s, and curated combo packs**.  
 The project focuses on clean architecture, scalable backend APIs, and a user-friendly frontend.
