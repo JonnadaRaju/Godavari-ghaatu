@@ -171,10 +171,6 @@ Healthy homemade laddu’s such as:
 - CSS3 / Tailwind CSS
 - JavaScript
 
-### Deployment
-- Backend: Render / Railway
-- Frontend: Vercel / Netlify
-
 ---
 
 ## 🚀 Future Enhancements
