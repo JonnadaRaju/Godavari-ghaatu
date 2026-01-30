@@ -10,5 +10,6 @@ class Order(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(String, nullable=False)
     
-    user = relationship("User")
+    user = relationship("User", back_populates="orders")
+    items = relationship("OrderItem", back_populates="order")
     
