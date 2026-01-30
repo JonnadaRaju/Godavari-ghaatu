@@ -10,3 +10,5 @@ class Product(Base):
     name = Column(String, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
     is_active = Column(Boolean, default=True)
+    
+    combo_items = relationship("ComboItem", foreign_keys="ComboItem.combo_product_id",)
