@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, ForeignKey, Numeric
 from app.core.database import Base
+from sqlalchemy.orm import relationship
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -10,3 +11,6 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
     
+    
+order = relationship("Order", back_populates="items")
+product = relationship("Product")
