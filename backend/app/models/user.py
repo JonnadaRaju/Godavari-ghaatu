@@ -11,3 +11,4 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     is_active = Column(Boolean, default=True)
 
+orders = relationship("orders", back_populates="user")
