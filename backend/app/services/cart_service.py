@@ -6,14 +6,19 @@ from app.models.cart import Cart, CartItem
 
 def get_or_create_cart(db: Session, user_id):
     cart = db.query(Cart).filter_by(user_id=user_id).first()
+
     if not cart:
         cart = Cart(user_id=user_id)
         db.add(cart)
-        db.flush()
+        db.flush()  # get cart.id without commit
+
     return cart
 
 
 def add_item_to_cart(db: Session, user_id, product_id, quantity):
+    if quantity <= 0:
+        raise ValueError("Quantity must be greater than zero")
+
     cart = get_or_create_cart(db, user_id)
 
     item = (

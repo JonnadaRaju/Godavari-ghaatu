@@ -3,7 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.schemas.cart import CartOut, AddCartItemIn
-from app.services.cart_service import add_item_to_cart
+from app.services.cart_service import (
+    add_item_to_cart,
+    get_or_create_cart,
+)
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
 
@@ -16,7 +19,7 @@ def get_current_user_id():
 @router.get("", response_model=CartOut)
 def get_cart(db: Session = Depends(get_db)):
     user_id = get_current_user_id()
-    cart = add_item_to_cart(db, user_id, None, 0)
+    cart = get_or_create_cart(db, user_id)
     return cart
 
 
@@ -31,7 +34,7 @@ def add_cart_item(
 ):
     user_id = get_current_user_id()
     return add_item_to_cart(
-        db,
+        db=db,
         user_id=user_id,
         product_id=payload.product_id,
         quantity=payload.quantity,
