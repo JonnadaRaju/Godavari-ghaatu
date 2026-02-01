@@ -7,6 +7,8 @@ class CartItemOut(BaseModel):
     id: UUID
     product_id: UUID
     quantity: int
+    unit_price: float
+    line_total: float
     
     class Config:
         from_attributes = True
@@ -15,7 +17,7 @@ class CartItemOut(BaseModel):
 class CartOut(BaseModel):
     id: UUID
     items: List[CartItemOut]
-    total_amount: float = Field(..., ge=0)
+    total_amount: float
     
     class config:
         from_attributes = True

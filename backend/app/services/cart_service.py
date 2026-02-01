@@ -1,47 +1,36 @@
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, joinedload
 
-from app.models.cart import Cart, CartItem
-
-
-def get_or_create_cart(db: Session, user_id):
-    cart = db.query(Cart).filter_by(user_id=user_id).first()
-
-    if not cart:
-        cart = Cart(user_id=user_id)
-        db.add(cart)
-        db.flush()  # get cart.id without commit
-
-    return cart
+from app.models.cart import Cart
+from app.models.product import Product
 
 
-def add_item_to_cart(db: Session, user_id, product_id, quantity):
-    if quantity <= 0:
-        raise ValueError("Quantity must be greater than zero")
+def build_cart_response(db: Session, cart: Cart):
+    items_out = []
+    total_amount = 0.0
 
-    cart = get_or_create_cart(db, user_id)
-
-    item = (
-        db.query(CartItem)
-        .filter_by(cart_id=cart.id, product_id=product_id)
-        .first()
-    )
-
-    if item:
-        item.quantity += quantity
-    else:
-        item = CartItem(
-            cart_id=cart.id,
-            product_id=product_id,
-            quantity=quantity,
+    for item in cart.items:
+        product = (
+            db.query(Product)
+            .filter(Product.id == item.product_id)
+            .first()
         )
-        db.add(item)
 
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise
+        unit_price = product.price
+        line_total = unit_price * item.quantity
+        total_amount += line_total
 
-    db.refresh(cart)
-    return cart
+        items_out.append(
+            {
+                "id": item.id,
+                "product_id": item.product_id,
+                "quantity": item.quantity,
+                "unit_price": unit_price,
+                "line_total": line_total,
+            }
+        )
+
+    return {
+        "id": cart.id,
+        "items": items_out,
+        "total_amount": total_amount,
+    }
