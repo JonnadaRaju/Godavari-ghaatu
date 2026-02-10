@@ -19,9 +19,12 @@ class CartOut(BaseModel):
     items: List[CartItemOut]
     total_amount: float
     
-    class config:
+    class Config:
         from_attributes = True
         
 class AddCartItemIn(BaseModel):
     product_id: UUID
-    quantity: int = Field(..., gt=0)
+    quantity: int = Field(..., gt=0, description="Quantity must be greater than 0")
+    
+class UpdateCartItemIn(BaseModel):
+    quantity: int = Field(..., gt=0, description="Quantity must be greater than 0")
