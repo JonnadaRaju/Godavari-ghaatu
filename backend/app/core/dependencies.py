@@ -13,15 +13,10 @@ class CurrentUser:
         self.role = role
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> CurrentUser:
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),) -> CurrentUser:
     payload = decode_access_token(credentials.credentials)
 
-    return CurrentUser(
-        user_id=UUID(payload["sub"]),
-        role=payload["role"],
-    )
+    return CurrentUser(user_id=UUID(payload["sub"]), role=payload["role"],)
 
 
 def require_role(*allowed_roles: str):
