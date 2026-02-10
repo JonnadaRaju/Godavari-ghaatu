@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
+from typing import List
 
 from app.core.database import get_db
 from app.core.dependencies import (
@@ -8,10 +9,12 @@ from app.core.dependencies import (
     require_role,
     CurrentUser,
 )
-from app.schemas.order import OrderOut
+from app.schemas.order import OrderOut, OrderListOut
 from app.services.order_service import (
     create_order_from_cart,
     update_order_status,
+    get_user_orders,
+    get_order_by_id,
 )
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -23,6 +26,25 @@ def create_order(
     user: CurrentUser = Depends(get_current_user),
 ):
     return create_order_from_cart(db, user.user_id)
+
+
+@router.get("", response_model=List[OrderListOut])
+def list_orders(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+):
+    return get_user_orders(db, user.user_id, skip, limit)
+
+
+@router.get("/{order_id}", response_model=OrderOut)
+def get_order(
+    order_id: UUID,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+):
+    return get_order_by_id(db, order_id, user.user_id)
 
 
 @router.patch("/{order_id}/cancel", response_model=OrderOut)
@@ -43,11 +65,25 @@ def cancel_order(
 def ship_order(
     order_id: UUID,
     db: Session = Depends(get_db),
-    admin: CurrentUser = Depends(require_role("ADMIN")),
+    admin: CurrentUser = Depends(require_role("admin")),
 ):
     return update_order_status(
         db,
         order_id,
         user_id=None,
         new_status="SHIPPED",
+    )
+
+
+@router.patch("/{order_id}/deliver", response_model=OrderOut)
+def deliver_order(
+    order_id: UUID,
+    db: Session = Depends(get_db),
+    admin: CurrentUser = Depends(require_role("admin")),
+):
+    return update_order_status(
+        db,
+        order_id,
+        user_id=None,
+        new_status="DELIVERED",
     )

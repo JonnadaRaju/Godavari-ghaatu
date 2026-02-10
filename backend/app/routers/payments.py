@@ -12,15 +12,17 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 @router.post(
     "/webhook",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(require_role("SERVICE"))],
+    dependencies=[Depends(require_role("service"))],
 )
 def payment_webhook(
     payload: PaymentWebhookIn,
     db: Session = Depends(get_db),
 ):
+   
     return process_payment_event(
         db,
         provider=payload.provider,
         provider_event_id=payload.provider_event_id,
         order_id=payload.order_id,
+        amount=payload.amount,
     )
