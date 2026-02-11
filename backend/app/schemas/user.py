@@ -1,8 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from uuid import UUID
 from typing import Optional
 from datetime import datetime
-
 
 class UserBase(BaseModel):
     
@@ -16,6 +15,18 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=8, description="Minimum 8 characters")
 
 
+class UserCreate(UserBase):
+    """Schema for user registration."""
+    
+    password: str = Field(..., min_length=8, max_length=72, description="8-72 characters")
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_length(cls, v):
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError('Password too long (max 72 bytes)')
+        return v
+    
 class UserUpdate(BaseModel):
     
     full_name: Optional[str] = None
