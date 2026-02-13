@@ -20,7 +20,6 @@ ALLOWED_TRANSITIONS: Dict[str, Set[str]] = {
 
 
 def validate_status(status_value: str) -> None:
-
     if status_value not in ORDER_STATES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -29,7 +28,6 @@ def validate_status(status_value: str) -> None:
 
 
 def validate_transition(current_status: str, target_status: str) -> None:
-
     validate_status(current_status)
     validate_status(target_status)
 
