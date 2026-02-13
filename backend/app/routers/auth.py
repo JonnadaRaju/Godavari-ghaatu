@@ -6,8 +6,16 @@ from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
 from app.schemas.user import UserCreate, UserLogin, UserOut
 from app.models.user import User
+from app.repositories.user_repository import UserRepository
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+class TokenResponse(BaseModel):
+    """Response schema for login endpoint."""
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -16,13 +24,17 @@ def register(
     db: Session = Depends(get_db)
 ):
     """Register a new user."""
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    user_repo = UserRepository(db)
+    
+    # Check if email already exists
+    existing_user = user_repo.get_by_email(user_data.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered"
         )
     
+    # Create new user
     user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
@@ -32,16 +44,8 @@ def register(
         is_active=True
     )
     
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    return user
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+    created_user = user_repo.create(user)
+    return created_user
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -49,25 +53,39 @@ def login(
     credentials: UserLogin,
     db: Session = Depends(get_db)
 ):
-    """Login with email and password."""
-    user = db.query(User).filter(User.email == credentials.email).first()
+    """Login and get access token."""
+    user_repo = UserRepository(db)
     
-    if not user or not verify_password(credentials.password, user.hashed_password):
+    # Get user by email
+    user = user_repo.get_by_email(credentials.email)
+    
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Verify password
+    if not verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Check if user is active
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive"
         )
     
-    token = create_access_token(
-        subject=str(user.id),
-        role=user.role
-    )
+    # Create access token
+    access_token = create_access_token(data={"sub": str(user.id)})
     
-    return {"access_token": token, "token_type": "bearer"}
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserOut.model_validate(user)
+    )
