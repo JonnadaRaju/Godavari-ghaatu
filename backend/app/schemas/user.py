@@ -9,12 +9,6 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
 
-
-class UserCreate(UserBase):
-    
-    password: str = Field(..., min_length=8, description="Minimum 8 characters")
-
-
 class UserCreate(UserBase):
     """Schema for user registration."""
     
