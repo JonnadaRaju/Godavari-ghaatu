@@ -46,5 +46,5 @@ class UserLogin(BaseModel):
 
 class PasswordChange(BaseModel):
     
-    old_password: str
+    current_password: str
     new_password: str = Field(..., min_length=8, description="Minimum 8 characters")
