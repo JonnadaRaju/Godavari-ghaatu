@@ -29,9 +29,13 @@ class OrderItem(Base):
     order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=False)
 
+    variant_id = Column(UUID(as_uuid=True), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True,)
+    variant_label = Column(String(100), nullable=True, comment="Snapshot of variant label at order time e.g. '250g'")
+    
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Numeric(10, 2), nullable=False)
     line_total = Column(Numeric(10, 2), nullable=False)
 
     order = relationship("Order", back_populates="items")
     product = relationship("Product")
+    variant = relationship("ProductVariant")
