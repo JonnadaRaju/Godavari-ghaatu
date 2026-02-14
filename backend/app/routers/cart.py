@@ -41,6 +41,7 @@ def add_cart_item(
         user_id=user.user_id,
         product_id=payload.product_id,
         quantity=payload.quantity,
+        variant_id=payload.variant_id,
     )
     return build_cart_response(db, cart)
 
