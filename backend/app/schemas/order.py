@@ -1,11 +1,13 @@
 from pydantic import BaseModel
 from uuid import UUID
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 class OrderItemOut(BaseModel):
     id: UUID
     product_id: UUID
+    variant_id: Optional[UUID] = None
+    variant_label: Optional[str] = None
     quantity: int
     unit_price: float
     line_total: float
