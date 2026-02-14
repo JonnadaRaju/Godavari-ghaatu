@@ -8,7 +8,6 @@ from app.core.database import Base
 
 
 class Product(Base):
-    """Product model with display fields for frontend."""
     
     __tablename__ = "products"
 
@@ -20,15 +19,16 @@ class Product(Base):
     price = Column(
         Numeric(10, 2),
         nullable=False,
+        comment="Base price — use variant prices when variants exist"
     )
 
     stock_quantity = Column(
         Integer,
         nullable=False,
         default=0,
+        comment="Base stock — use variant stock when variants exist"
     )
     
-    # NEW FIELDS - Day 2 Addition
     image_url = Column(String(500), nullable=True, comment="Product image URL")
     category = Column(
         String(50), 
@@ -64,6 +64,17 @@ class Product(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    variants = relationship(
+        "ProductVariant",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
+    
+    __table_args__ = (
+        CheckConstraint("price > 0", name="ck_product_price_positive"),
+        CheckConstraint("stock_quantity >= 0", name="ck_product_stock_non_negative"),
+    )
+    
     # Relationships
     combo_items = relationship(
         "ComboItem",
@@ -77,6 +88,8 @@ class Product(Base):
         foreign_keys="ComboItem.component_product_id",
         back_populates="component_product",
     )
+    
+
 
     def __repr__(self):
         return f"<Product(id={self.id}, name={self.name}, category={self.category}, is_veg={self.is_veg})>"
