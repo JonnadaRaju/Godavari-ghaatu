@@ -22,12 +22,16 @@ class CartItem(Base):
     cart_id = Column(UUID(as_uuid=True), ForeignKey("carts.id", ondelete="CASCADE"), nullable=False)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     
+    variant_id = Column(UUID(as_uuid=True), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True,)
+    
+    
     quantity = Column(Integer, nullable=False)
 
     cart = relationship("Cart", back_populates="items")
     product = relationship("Product")
+    variant = relationship("ProductVariant")
 
     __table_args__ = (
         CheckConstraint("quantity > 0", name="ck_cart_item_quantity_positive"),
-        UniqueConstraint("cart_id", "product_id", name="uq_cart_product"),
+        UniqueConstraint("cart_id", "product_id", "variant_id", name="uq_cart_product_variant"),
     )
