@@ -15,7 +15,6 @@ class TokenResponse(BaseModel):
     """Response schema for login endpoint."""
     access_token: str
     token_type: str = "bearer"
-    user: UserOut
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -82,10 +81,6 @@ def login(
         )
     
     # Create access token
-    access_token = create_access_token(data={"sub": str(user.id)})
-    
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=UserOut.model_validate(user)
-    )
+    token = create_access_token(subject=str(user.id), role=user.role) 
+       
+    return {"access_token": token, "token_type": "bearer"}
