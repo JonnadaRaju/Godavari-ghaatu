@@ -6,27 +6,15 @@ from typing import List
 
 from app.models.cart import Cart, CartItem
 from app.models.product import Product
+from app.models.product_variant import ProductVariant
 from app.models.order import Order, OrderItem
 from app.services.order_state import validate_transition
 
 
 def create_order_from_cart(db: Session, user_id: UUID) -> Order:
-    """
-    Create order from user's cart and clear cart.
-    
-    Args:
-        db: Database session
-        user_id: User UUID
-        
-    Returns:
-        Created Order instance
-        
-    Raises:
-        HTTPException: If cart is empty or insufficient stock
-    """
     try:
         with db.begin_nested():
-            # Get cart with lock
+            # Lock cart row
             cart = (
                 db.execute(
                     select(Cart)
@@ -45,47 +33,77 @@ def create_order_from_cart(db: Session, user_id: UUID) -> Order:
             order_items = []
             total_amount = 0
 
-            # Process each cart item
             for item in cart.items:
-                # Get product with lock to prevent race conditions
+                # Lock and validate product
                 product = (
                     db.query(Product)
                     .filter(Product.id == item.product_id)
                     .with_for_update()
                     .first()
                 )
-                
                 if not product:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail=f"Product {item.product_id} not found"
                     )
-                
                 if not product.is_active:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
-                        detail=f"Product {product.name} is no longer available"
+                        detail=f"Product '{product.name}' is no longer available"
                     )
-                
-                # Validate stock
-                if product.stock_quantity < item.quantity:
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail=f"Insufficient stock for {product.name}. Available: {product.stock_quantity}"
-                    )
-                
-                # Deduct stock
-                product.stock_quantity -= item.quantity
 
-                # Calculate pricing
-                unit_price = product.price
+                # Day 3: handle variant vs base product
+                variant_id = item.variant_id
+                variant_label = None
+
+                if variant_id:
+                    # Lock and validate variant
+                    variant = (
+                        db.query(ProductVariant)
+                        .filter(ProductVariant.id == variant_id)
+                        .with_for_update()
+                        .first()
+                    )
+                    if not variant or not variant.is_active:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Variant for '{product.name}' is no longer available"
+                        )
+                    if variant.stock_quantity < item.quantity:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Insufficient stock for '{product.name} - {variant.label}'. "
+                                   f"Available: {variant.stock_quantity}"
+                        )
+
+                    # Deduct variant stock
+                    variant.stock_quantity -= item.quantity
+
+                    # Snapshot variant price and label
+                    unit_price = variant.price
+                    variant_label = variant.label
+
+                else:
+                    # No variant — use base product stock and price
+                    if product.stock_quantity < item.quantity:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Insufficient stock for '{product.name}'. "
+                                   f"Available: {product.stock_quantity}"
+                        )
+
+                    # Deduct product stock
+                    product.stock_quantity -= item.quantity
+                    unit_price = product.price
+
                 line_total = unit_price * item.quantity
                 total_amount += line_total
 
-                # Create order item
                 order_items.append(
                     OrderItem(
                         product_id=item.product_id,
+                        variant_id=variant_id,          # Day 3
+                        variant_label=variant_label,    # Day 3 snapshot
                         quantity=item.quantity,
                         unit_price=unit_price,
                         line_total=line_total,
@@ -99,13 +117,10 @@ def create_order_from_cart(db: Session, user_id: UUID) -> Order:
                 status="PENDING",
                 items=order_items,
             )
-
             db.add(order)
 
             # Clear cart
-            db.query(CartItem).filter(
-                CartItem.cart_id == cart.id
-            ).delete()
+            db.query(CartItem).filter(CartItem.cart_id == cart.id).delete()
 
         db.commit()
         db.refresh(order)
@@ -128,110 +143,40 @@ def update_order_status(
     user_id: UUID | None,
     new_status: str
 ) -> Order:
-    """
-    Update order status with state transition validation.
-    
-    Args:
-        db: Database session
-        order_id: Order UUID
-        user_id: User UUID (None for service bypass)
-        new_status: New status to set
-        
-    Returns:
-        Updated Order instance
-        
-    Raises:
-        HTTPException: If order not found, unauthorized, or invalid transition
-    """
     order = db.query(Order).filter(Order.id == order_id).first()
-    
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found"
-        )
-    
-    # Verify ownership (unless service bypass with user_id=None)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
     if user_id is not None and order.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this order"
-        )
-    
-    # Validate state transition
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this order")
+
     validate_transition(order.status, new_status)
-    
-    # Update status
+
     order.status = new_status
     db.commit()
     db.refresh(order)
-    
     return order
 
 
-def get_user_orders(
-    db: Session,
-    user_id: UUID,
-    skip: int = 0,
-    limit: int = 10
-) -> List[Order]:
-    """
-    Get paginated list of user's orders.
-    
-    Args:
-        db: Database session
-        user_id: User UUID
-        skip: Number of records to skip
-        limit: Maximum number of records to return
-        
-    Returns:
-        List of Order instances
-    """
-    orders = db.query(Order)\
+def get_user_orders(db: Session, user_id: UUID, skip: int = 0, limit: int = 10) -> List[Order]:
+    return db.query(Order)\
         .filter(Order.user_id == user_id)\
         .order_by(Order.created_at.desc())\
         .offset(skip)\
         .limit(limit)\
         .all()
-    
-    return orders
 
 
-def get_order_by_id(
-    db: Session,
-    order_id: UUID,
-    user_id: UUID | None = None
-) -> Order:
-    """
-    Get order by ID with optional user verification.
-    
-    Args:
-        db: Database session
-        order_id: Order UUID
-        user_id: Optional User UUID for ownership verification
-        
-    Returns:
-        Order instance with items loaded
-        
-    Raises:
-        HTTPException: If order not found or unauthorized
-    """
+def get_order_by_id(db: Session, order_id: UUID, user_id: UUID | None = None) -> Order:
     order = db.query(Order)\
         .options(joinedload(Order.items))\
         .filter(Order.id == order_id)\
         .first()
-    
+
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found"
-        )
-    
-    # Verify ownership if user_id provided
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
     if user_id is not None and order.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this order"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this order")
+
     return order
