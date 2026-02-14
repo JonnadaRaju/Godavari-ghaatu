@@ -8,10 +8,8 @@ Create Date: 2026-02-13
 from alembic import op
 import sqlalchemy as sa
 
-# ← IMPORTANT: replace the value below with your actual last revision ID
-# Run `alembic history` to find it
 revision: str = 'c4d2b8f1e9a7'
-down_revision = 'your_last_revision_id_here'
+down_revision = 'cdd97fee60ff'
 branch_labels = None
 depends_on = None
 
