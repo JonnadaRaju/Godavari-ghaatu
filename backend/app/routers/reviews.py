@@ -115,7 +115,6 @@ def update_review(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    """Update your own review."""
     review = db.query(Review).filter(
         Review.id == review_id,
         Review.product_id == product_id,
@@ -142,3 +141,22 @@ def update_review(
         created_at=review.created_at,
         updated_at=review.updated_at,
     )
+    
+@router.delete("/{product_id}/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(
+    product_id: UUID,
+    review_id: UUID,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+):
+    review = db.query(Review).filter(
+        Review.id == review_id,
+        Review.product_id == product_id,
+        Review.user_id == user.user_id,
+    ).first()
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+
+    db.delete(review)
+    db.commit()
+    return None
