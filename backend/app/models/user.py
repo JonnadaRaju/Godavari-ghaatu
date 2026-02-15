@@ -26,3 +26,4 @@ class User(Base):
     
     cart = relationship("Cart", uselist=False, back_populates="user", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user")
+    wishlist_items = relationship("Wishlist", back_populates="user", cascade="all, delete-orphan")
