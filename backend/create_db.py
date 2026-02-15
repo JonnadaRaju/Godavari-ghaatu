@@ -52,7 +52,7 @@ except Exception as parse_error:
     print("\nExpected format:")
     print("DATABASE_URL=postgresql://username:password@host:port/dbname")
     print("\nExample:")
-    print("DATABASE_URL=postgresql://raju:6014@localhost:5432/rajudb")
+    print("DATABASE_URL=postgresql://raju:6014@localhost:5433/rajudb")
     print("=" * 60)
     exit(1)
 
