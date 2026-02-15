@@ -60,6 +60,18 @@ def cancel_order(
         "CANCELLED",
     )
 
+@router.patch("/{order_id}/pack", response_model=OrderOut)
+def pack_order(
+    order_id: UUID,
+    db: Session = Depends(get_db),
+    admin: CurrentUser = Depends(require_role("admin")),
+):
+    return update_order_status(
+        db, 
+        order_id, 
+        user_id=None, 
+        new_status="PACKED",
+    )
 
 @router.patch("/{order_id}/ship", response_model=OrderOut)
 def ship_order(
