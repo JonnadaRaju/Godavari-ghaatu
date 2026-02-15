@@ -9,3 +9,6 @@ __pycache__/
 
 alembic/__pycache__/
 
+# Sensitive config
+backend/create_db.py
+backend/alembic.ini
