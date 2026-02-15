@@ -13,14 +13,19 @@ class Order(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(String, nullable=False, default="PENDING")
-    total_amount = Column(Numeric(10, 2), nullable=False)
 
+    subtotal = Column(Numeric(10, 2), nullable=False, comment="Sum of all line totals before charges")
+    delivery_charge = Column(Numeric(10, 2), nullable=False, default=0, comment="0 if free delivery threshold met")
+    tax_amount = Column(Numeric(10, 2), nullable=False, default=0, comment="GST / tax on subtotal")
+    total_amount = Column(Numeric(10, 2), nullable=False, comment="subtotal + delivery_charge + tax_amount")
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan",)
 
+    payment_events = relationship("PaymentEvent", backref="order")
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -30,7 +35,7 @@ class OrderItem(Base):
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=False)
 
     variant_id = Column(UUID(as_uuid=True), ForeignKey("product_variants.id", ondelete="SET NULL"), nullable=True,)
-    variant_label = Column(String(100), nullable=True, comment="Snapshot of variant label at order time e.g. '250g'")
+    variant_label = Column(String(100), nullable=True)
     
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Numeric(10, 2), nullable=False)
