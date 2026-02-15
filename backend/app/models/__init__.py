@@ -7,6 +7,7 @@ from app.models.order import Order, OrderItem
 from app.models.combo_item import ComboItem
 from app.models.payment import PaymentEvent
 from app.models.wishlist import Wishlist
+from app.models.review import Review
 
 __all__ = [
     "Base",
@@ -20,4 +21,5 @@ __all__ = [
     "ComboItem",
     "PaymentEvent",
     "Wishlist",
+    "Review",
 ]
