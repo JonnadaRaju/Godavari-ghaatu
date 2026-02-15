@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 ORDER_STATES = {
     "PENDING",
     "PAID",
+    "PACKED"
     "SHIPPED",
     "DELIVERED",
     "CANCELLED",
@@ -12,7 +13,8 @@ ORDER_STATES = {
 
 ALLOWED_TRANSITIONS: Dict[str, Set[str]] = {
     "PENDING": {"PAID", "CANCELLED"},
-    "PAID": {"SHIPPED"},
+    "PAID": {"PACKED"},
+    "PACKED": {"SHIPPED"},
     "SHIPPED": {"DELIVERED"},
     "DELIVERED": set(),
     "CANCELLED": set(),
