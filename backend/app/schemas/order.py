@@ -19,6 +19,9 @@ class OrderOut(BaseModel):
     id: UUID
     user_id: UUID
     status: str
+    subtotal: float
+    delivery_charge: float
+    tax_amount: float
     total_amount: float
     items: List[OrderItemOut]
     created_at: datetime
