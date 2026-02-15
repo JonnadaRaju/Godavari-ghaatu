@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from uuid import UUID
+from typing import List
+
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, CurrentUser
 from app.models.review import Review
 from app.models.product import Product
-from app.schemas.review import ReviewCreate, ReviewOut
+from app.schemas.review import ReviewCreate, ReviewOut, ReviewUpdate, ProductRatingSummary
 
 router = APIRouter(prefix="/products", tags=["Reviews"])
 
@@ -54,4 +57,52 @@ def create_review(
         reviewer_name=review.user.full_name if review.user else None,
         created_at=review.created_at,
         updated_at=review.updated_at,
+    )
+    
+@router.get("/{product_id}/reviews", response_model=List[ReviewOut])
+def list_reviews(
+    product_id: UUID,
+    db: Session = Depends(get_db),
+):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    reviews = db.query(Review).filter(
+        Review.product_id == product_id
+    ).order_by(Review.created_at.desc()).all()
+
+    result = []
+    for r in reviews:
+        item = ReviewOut(
+            id=r.id,
+            user_id=r.user_id,
+            product_id=r.product_id,
+            rating=r.rating,
+            comment=r.comment,
+            reviewer_name=r.user.full_name if r.user else None,
+            created_at=r.created_at,
+            updated_at=r.updated_at,
+        )
+        result.append(item)
+    return result
+
+
+@router.get("/{product_id}/reviews/summary", response_model=ProductRatingSummary)
+def get_rating_summary(
+    product_id: UUID,
+    db: Session = Depends(get_db),
+):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    result = db.query(
+        func.avg(Review.rating).label("average_rating"),
+        func.count(Review.id).label("review_count")
+    ).filter(Review.product_id == product_id).first()
+
+    return ProductRatingSummary(
+        average_rating=round(float(result.average_rating), 1) if result.average_rating else 0.0,
+        review_count=result.review_count or 0,
     )
