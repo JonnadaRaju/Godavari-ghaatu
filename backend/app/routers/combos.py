@@ -5,10 +5,9 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, require_role, CurrentUser
+from app.core.dependencies import require_role, CurrentUser
 from app.models.combo_item import ComboItem
 from app.models.product import Product
-
 
 
 class ComboItemAddIn(BaseModel):
@@ -16,13 +15,17 @@ class ComboItemAddIn(BaseModel):
     quantity: int = Field(..., gt=0, description="How many units of this component in the combo")
 
 
+class ComboItemUpdateIn(BaseModel):
+    quantity: int = Field(..., gt=0, description="Updated quantity")
+
+
 class ComboItemOut(BaseModel):
     id: UUID
     combo_product_id: UUID
     component_product_id: UUID
     quantity: int
-    component_name: str        
-    component_price: float     
+    component_name: str
+    component_price: float
     component_image_url: str | None = None
 
     class Config:
@@ -42,10 +45,7 @@ def list_combo_items(
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     if product.category != "combo":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This product is not a combo"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This product is not a combo")
 
     items = (
         db.query(ComboItem)
@@ -91,7 +91,6 @@ def add_combo_item(
     if payload.component_product_id == product_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A combo cannot contain itself")
 
-
     existing = db.query(ComboItem).filter(
         ComboItem.combo_product_id == product_id,
         ComboItem.component_product_id == payload.component_product_id,
@@ -123,7 +122,7 @@ def add_combo_item(
 def update_combo_item(
     product_id: UUID,
     item_id: UUID,
-    quantity: int = Field(..., gt=0),
+    payload: ComboItemUpdateIn,
     db: Session = Depends(get_db),
     admin: CurrentUser = Depends(require_role("admin")),
 ):
@@ -134,7 +133,7 @@ def update_combo_item(
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Combo item not found")
 
-    item.quantity = quantity
+    item.quantity = payload.quantity
     db.commit()
     db.refresh(item)
 
