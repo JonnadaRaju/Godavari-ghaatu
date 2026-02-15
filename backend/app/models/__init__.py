@@ -6,6 +6,7 @@ from app.models.cart import Cart, CartItem
 from app.models.order import Order, OrderItem
 from app.models.combo_item import ComboItem
 from app.models.payment import PaymentEvent
+from app.models.wishlist import Wishlist
 
 __all__ = [
     "Base",
@@ -18,4 +19,5 @@ __all__ = [
     "OrderItem",
     "ComboItem",
     "PaymentEvent",
+    "Wishlist",
 ]
