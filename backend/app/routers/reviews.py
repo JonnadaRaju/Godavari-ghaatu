@@ -106,3 +106,39 @@ def get_rating_summary(
         average_rating=round(float(result.average_rating), 1) if result.average_rating else 0.0,
         review_count=result.review_count or 0,
     )
+    
+@router.put("/{product_id}/reviews/{review_id}", response_model=ReviewOut)
+def update_review(
+    product_id: UUID,
+    review_id: UUID,
+    payload: ReviewUpdate,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Update your own review."""
+    review = db.query(Review).filter(
+        Review.id == review_id,
+        Review.product_id == product_id,
+        Review.user_id == user.user_id,
+    ).first()
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+
+    if payload.rating is not None:
+        review.rating = payload.rating
+    if payload.comment is not None:
+        review.comment = payload.comment
+
+    db.commit()
+    db.refresh(review)
+
+    return ReviewOut(
+        id=review.id,
+        user_id=review.user_id,
+        product_id=review.product_id,
+        rating=review.rating,
+        comment=review.comment,
+        reviewer_name=review.user.full_name if review.user else None,
+        created_at=review.created_at,
+        updated_at=review.updated_at,
+    )
