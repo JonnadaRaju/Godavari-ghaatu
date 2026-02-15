@@ -6,7 +6,6 @@ from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
 from app.schemas.user import UserCreate, UserLogin, UserOut
 from app.models.user import User
-from app.repositories.user_repository import UserRepository
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -23,17 +22,13 @@ def register(
     db: Session = Depends(get_db)
 ):
     """Register a new user."""
-    user_repo = UserRepository(db)
-    
-    # Check if email already exists
-    existing_user = user_repo.get_by_email(user_data.email)
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered"
         )
-    
-    # Create new user
+
     user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
@@ -42,9 +37,11 @@ def register(
         role="customer",
         is_active=True
     )
-    
-    created_user = user_repo.create(user)
-    return created_user
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -53,34 +50,20 @@ def login(
     db: Session = Depends(get_db)
 ):
     """Login and get access token."""
-    user_repo = UserRepository(db)
-    
-    # Get user by email
-    user = user_repo.get_by_email(credentials.email)
-    
-    if not user:
+    user = db.query(User).filter(User.email == credentials.email).first()
+
+    if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    # Verify password
-    if not verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Check if user is active
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive"
         )
-    
-    # Create access token
-    token = create_access_token(subject=str(user.id), role=user.role) 
-       
+
+    token = create_access_token(subject=str(user.id), role=user.role)
     return {"access_token": token, "token_type": "bearer"}
