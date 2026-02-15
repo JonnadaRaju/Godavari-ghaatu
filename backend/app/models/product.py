@@ -89,6 +89,10 @@ class Product(Base):
         back_populates="component_product",
     )
     
+    reviews = relationship(
+        "Review", back_populates="product", 
+        cascade="all, delete-orphan",
+    )
 
 
     def __repr__(self):
