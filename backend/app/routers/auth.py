@@ -11,7 +11,6 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 class TokenResponse(BaseModel):
-    """Response schema for login endpoint."""
     access_token: str
     token_type: str = "bearer"
 
@@ -21,7 +20,6 @@ def register(
     user_data: UserCreate,
     db: Session = Depends(get_db)
 ):
-    """Register a new user."""
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
         raise HTTPException(
@@ -49,7 +47,6 @@ def login(
     credentials: UserLogin,
     db: Session = Depends(get_db)
 ):
-    """Login and get access token."""
     user = db.query(User).filter(User.email == credentials.email).first()
 
     if not user or not verify_password(credentials.password, user.hashed_password):
