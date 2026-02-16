@@ -14,6 +14,7 @@ from app.services.order_service import (
     create_order_from_cart,
     update_order_status,
     get_user_orders,
+    get_all_orders,
     get_order_by_id,
 )
 
@@ -31,10 +32,13 @@ def create_order(
 @router.get("", response_model=List[OrderListOut])
 def list_orders(
     skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
+    # Admin gets ALL orders; regular users get only their own
+    if user.role == "admin":
+        return get_all_orders(db, skip, limit)
     return get_user_orders(db, user.user_id, skip, limit)
 
 
@@ -44,7 +48,9 @@ def get_order(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    return get_order_by_id(db, order_id, user.user_id)
+    # Admin can view any order; users can only view their own
+    user_id = None if user.role == "admin" else user.user_id
+    return get_order_by_id(db, order_id, user_id)
 
 
 @router.patch("/{order_id}/cancel", response_model=OrderOut)
@@ -60,6 +66,7 @@ def cancel_order(
         "CANCELLED",
     )
 
+
 @router.patch("/{order_id}/pack", response_model=OrderOut)
 def pack_order(
     order_id: UUID,
@@ -67,11 +74,12 @@ def pack_order(
     admin: CurrentUser = Depends(require_role("admin")),
 ):
     return update_order_status(
-        db, 
-        order_id, 
-        user_id=None, 
+        db,
+        order_id,
+        user_id=None,
         new_status="PACKED",
     )
+
 
 @router.patch("/{order_id}/ship", response_model=OrderOut)
 def ship_order(
