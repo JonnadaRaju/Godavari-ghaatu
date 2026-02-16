@@ -5,7 +5,6 @@ from pathlib import Path
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
     
     # Database
     DATABASE_URL: str
@@ -40,10 +39,6 @@ class Settings(BaseSettings):
         # Add extra validation
         @classmethod
         def customise_sources(cls, init_settings, env_settings, file_secret_settings):
-            """
-            Ensure .env file is loaded.
-            Priority: environment variables > .env file > defaults
-            """
             return (
                 init_settings,
                 env_settings,
