@@ -32,11 +32,11 @@ def create_order(
 @router.get("", response_model=List[OrderListOut])
 def list_orders(
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(100, ge=1, le=200),
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    # Admin gets ALL orders; regular users get only their own
+    # Admin sees ALL orders; regular users see only their own
     if user.role == "admin":
         return get_all_orders(db, skip, limit)
     return get_user_orders(db, user.user_id, skip, limit)
@@ -48,7 +48,7 @@ def get_order(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    # Admin can view any order; users can only view their own
+    # Admin can view any order; users only their own
     user_id = None if user.role == "admin" else user.user_id
     return get_order_by_id(db, order_id, user_id)
 
@@ -59,12 +59,7 @@ def cancel_order(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    return update_order_status(
-        db,
-        order_id,
-        user.user_id,
-        "CANCELLED",
-    )
+    return update_order_status(db, order_id, user.user_id, "CANCELLED")
 
 
 @router.patch("/{order_id}/pack", response_model=OrderOut)
@@ -73,12 +68,7 @@ def pack_order(
     db: Session = Depends(get_db),
     admin: CurrentUser = Depends(require_role("admin")),
 ):
-    return update_order_status(
-        db,
-        order_id,
-        user_id=None,
-        new_status="PACKED",
-    )
+    return update_order_status(db, order_id, user_id=None, new_status="PACKED")
 
 
 @router.patch("/{order_id}/ship", response_model=OrderOut)
@@ -87,12 +77,7 @@ def ship_order(
     db: Session = Depends(get_db),
     admin: CurrentUser = Depends(require_role("admin")),
 ):
-    return update_order_status(
-        db,
-        order_id,
-        user_id=None,
-        new_status="SHIPPED",
-    )
+    return update_order_status(db, order_id, user_id=None, new_status="SHIPPED")
 
 
 @router.patch("/{order_id}/deliver", response_model=OrderOut)
@@ -101,9 +86,4 @@ def deliver_order(
     db: Session = Depends(get_db),
     admin: CurrentUser = Depends(require_role("admin")),
 ):
-    return update_order_status(
-        db,
-        order_id,
-        user_id=None,
-        new_status="DELIVERED",
-    )
+    return update_order_status(db, order_id, user_id=None, new_status="DELIVERED")
