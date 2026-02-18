@@ -7,6 +7,7 @@ from app.routers import product_variants
 from app.routers import wishlist
 from app.routers import reviews
 from app.routers import combos
+from app.routers import payments
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -34,6 +35,7 @@ app.include_router(cart.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
 app.include_router(wishlist.router, prefix="/api/v1")
+app.include_router(payments.router, prefix="/api/v1")
 
 
 @app.get("/")
