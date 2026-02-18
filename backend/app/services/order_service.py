@@ -141,7 +141,6 @@ def update_order_status(
 def get_user_orders(
     db: Session, user_id: UUID, skip: int = 0, limit: int = 100
 ) -> List[Order]:
-    """Returns orders belonging to a specific user."""
     return (
         db.query(Order)
         .options(joinedload(Order.items))
@@ -156,7 +155,6 @@ def get_user_orders(
 def get_all_orders(
     db: Session, skip: int = 0, limit: int = 100
 ) -> List[Order]:
-    """Returns ALL orders across all users — admin only."""
     return (
         db.query(Order)
         .options(joinedload(Order.items))
