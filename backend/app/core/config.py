@@ -25,13 +25,14 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: str = "http://localhost:3000"
     
+    UPI_ID: str = "jonadaraju147@ibl"
+    UPI_NAME: str = "Godavari Ghaatu"
+    
     @property
     def cors_origins(self) -> List[str]:
-        """Parse comma-separated CORS origins."""
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
     
     class Config:
-        # Look for .env file in the backend directory
         env_file = ".env"
         env_file_encoding = 'utf-8'
         case_sensitive = True
