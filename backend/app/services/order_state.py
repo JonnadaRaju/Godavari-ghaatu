@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 ORDER_STATES = {
     "PENDING",
     "PAID",
-    "PACKED"
+    "PACKED",
     "SHIPPED",
     "DELIVERED",
     "CANCELLED",
