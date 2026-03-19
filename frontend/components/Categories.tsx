@@ -6,7 +6,7 @@ const categories = [
   {
     name: 'Pickles',
     slug: 'pickle',
-    emoji: '🥒',
+    emoji: '🥭',
     gradient: 'from-saffron-400 to-saffron-600',
   },
   {
@@ -43,7 +43,9 @@ export default function Categories() {
               href={`/products?category=${category.slug}`}
               className="group relative overflow-hidden rounded-2xl shadow-lg transition-transform hover:scale-105"
             >
-              <div className={`h-48 bg-gradient-to-br ${category.gradient} flex items-center justify-center`}>
+              <div
+                className={`h-48 bg-gradient-to-br ${category.gradient} flex items-center justify-center`}
+              >
                 <span className="text-7xl group-hover:scale-110 transition-transform">
                   {category.emoji}
                 </span>
