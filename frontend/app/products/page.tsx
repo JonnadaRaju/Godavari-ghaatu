@@ -1,25 +1,10 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import ProductCard from '@/components/ProductCard'
-import { Product } from '@/lib/store'
-import { FunnelIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
-
-const allProducts: Product[] = [
-  { id: 1, name: 'Mango Pickle', description: 'Authentic Andhra mango pickle with traditional spices', price: 250, image: '🥭', category: 'pickle', type: 'veg', special: 'bestseller', inStock: true, stock: 50 },
-  { id: 2, name: 'Gundu Pickle', description: 'Traditional gundu chili pickle from Godavari region', price: 300, image: '🌶️', category: 'pickle', type: 'veg', inStock: true, stock: 30 },
-  { id: 3, name: 'Avakaya Pickle', description: 'Famous mango pickle with extra spicy masala', price: 350, image: '🥒', category: 'pickle', type: 'veg', special: 'bestseller', inStock: true, stock: 25 },
-  { id: 4, name: 'Mixed Pickle', description: 'Combination of mango and lemon pickle', price: 280, image: '🫙', category: 'pickle', type: 'veg', inStock: true, stock: 40 },
-  { id: 5, name: 'Garam Masala', description: 'Aromatic spice blend for authentic taste', price: 150, image: '🫚', category: 'spice', type: 'veg', inStock: true, stock: 60 },
-  { id: 6, name: 'Kashmiri Chili Powder', description: 'Red chili powder for vibrant color', price: 180, image: '🔴', category: 'spice', type: 'veg', inStock: true, stock: 45 },
-  { id: 7, name: 'Turmeric Powder', description: 'Pure turmeric for health benefits', price: 120, image: '🟡', category: 'spice', type: 'veg', special: 'new-arrival', inStock: true, stock: 55 },
-  { id: 8, name: 'Besan Laddu', description: 'Traditional sweet made with gram flour', price: 200, image: '🍬', category: 'laddu', type: 'veg', inStock: true, stock: 35 },
-  { id: 9, name: 'Rava Laddu', description: 'Semolina-based sweet with nuts', price: 220, image: '🟠', category: 'laddu', type: 'veg', special: 'bestseller', inStock: true, stock: 30 },
-  { id: 10, name: 'Pickle Combo', description: 'Pack of 3 different pickles', price: 750, image: '🎁', category: 'combo', type: 'veg', inStock: true, stock: 20 },
-  { id: 11, name: 'Spice Combo', description: 'Essential spices for your kitchen', price: 500, image: '📦', category: 'combo', type: 'veg', inStock: true, stock: 25 },
-  { id: 12, name: 'Sweet Combo', description: 'Assorted laddus for festivals', price: 600, image: '🎀', category: 'combo', type: 'veg', special: 'new-arrival', inStock: true, stock: 15 },
-]
+import { mockProducts } from '@/lib/mock-data'
 
 const categories = [
   { value: '', label: 'All Categories' },
@@ -50,11 +35,9 @@ const sortOptions = [
 
 function ProductsContent() {
   const searchParams = useSearchParams()
-  const [products, setProducts] = useState<Product[]>(allProducts)
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(allProducts)
+  const [filteredProducts, setFilteredProducts] = useState(mockProducts)
   const [loading, setLoading] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     type: searchParams.get('type') || '',
@@ -65,35 +48,34 @@ function ProductsContent() {
 
   useEffect(() => {
     setLoading(true)
-    let result = [...allProducts]
+    let result = [...mockProducts]
 
     if (filters.category) {
-      result = result.filter(p => p.category === filters.category)
+      result = result.filter((product) => product.category === filters.category)
     }
     if (filters.type) {
-      result = result.filter(p => p.type === filters.type)
+      result = result.filter((product) => product.type === filters.type)
     }
     if (filters.special) {
-      result = result.filter(p => p.special === filters.special)
+      result = result.filter((product) => product.special === filters.special)
     }
     if (filters.search) {
       const search = filters.search.toLowerCase()
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(search) || 
-        p.description.toLowerCase().includes(search)
+      result = result.filter(
+        (product) =>
+          product.name.toLowerCase().includes(search) ||
+          product.description.toLowerCase().includes(search)
       )
     }
     if (filters.sort) {
       const [field, direction] = filters.sort.split('-')
       result.sort((a, b) => {
         if (field === 'name') {
-          return direction === 'asc' 
+          return direction === 'asc'
             ? a.name.localeCompare(b.name)
             : b.name.localeCompare(a.name)
         }
-        return direction === 'asc' 
-          ? a.price - b.price
-          : b.price - a.price
+        return direction === 'asc' ? a.price - b.price : b.price - a.price
       })
     }
 
@@ -111,7 +93,8 @@ function ProductsContent() {
     })
   }
 
-  const hasActiveFilters = filters.category || filters.type || filters.special || filters.search
+  const hasActiveFilters =
+    filters.category || filters.type || filters.special || filters.search
 
   return (
     <div className="min-h-screen bg-cream-50 py-8">
@@ -139,7 +122,7 @@ function ProductsContent() {
                     onClick={clearFilters}
                     className="text-sm text-saffron-600 hover:text-saffron-700"
                   >
-                    Clear All
+                    Clear all
                   </button>
                 )}
               </div>
@@ -154,8 +137,10 @@ function ProductsContent() {
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   >
-                    {categories.map((cat) => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    {categories.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {category.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -169,8 +154,10 @@ function ProductsContent() {
                     onChange={(e) => setFilters({ ...filters, type: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   >
-                    {types.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                    {types.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -184,8 +171,10 @@ function ProductsContent() {
                     onChange={(e) => setFilters({ ...filters, special: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   >
-                    {specials.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
+                    {specials.map((special) => (
+                      <option key={special.value} value={special.value}>
+                        {special.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -212,8 +201,10 @@ function ProductsContent() {
                   className="px-4 py-2 border border-gray-300 rounded-lg"
                 >
                   <option value="">Sort by</option>
-                  {sortOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -221,7 +212,8 @@ function ProductsContent() {
 
             <div className="mb-4 flex items-center justify-between">
               <p className="text-gray-600">
-                {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+                {filteredProducts.length} product
+                {filteredProducts.length !== 1 ? 's' : ''} found
               </p>
             </div>
 
