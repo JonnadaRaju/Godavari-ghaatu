@@ -52,9 +52,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               <span className="text-sm">Add</span>
             </button>
           </div>
-          {!product.inStock && (
-            <p className="text-red-500 text-sm mt-2">Out of stock</p>
-          )}
+          {!product.inStock && <p className="text-red-500 text-sm mt-2">Out of stock</p>}
         </div>
       </div>
     </Link>
