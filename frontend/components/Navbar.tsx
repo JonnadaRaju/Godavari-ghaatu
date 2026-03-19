@@ -1,9 +1,23 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ShoppingCartIcon, UserIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import { useCartStore, useAuthStore, useUIStore } from '@/lib/store'
-import { useState, useEffect } from 'react'
+import {
+  ShoppingCartIcon,
+  UserIcon,
+  Bars3Icon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
+import { useAuthStore, useCartStore, useUIStore } from '@/lib/store'
+
+const navLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/products', label: 'Products' },
+  { href: '/products?category=combo', label: 'Combos' },
+  { href: '/products?category=pickle', label: 'Pickles' },
+  { href: '/products?category=spice', label: 'Spices' },
+  { href: '/products?category=laddu', label: 'Laddus' },
+]
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -11,11 +25,11 @@ export default function Navbar() {
   const { getTotalItems } = useCartStore()
   const { isAuthenticated, user, logout } = useAuthStore()
   const { toggleCart, openAuthModal } = useUIStore()
-  
+
   useEffect(() => {
     setMounted(true)
   }, [])
-  
+
   const totalItems = mounted ? getTotalItems() : 0
 
   return (
@@ -29,12 +43,15 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-gray-700 hover:text-saffron-600 transition-colors">
-              Home
-            </Link>
-            <Link href="/products" className="text-gray-700 hover:text-saffron-600 transition-colors">
-              Products
-            </Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-gray-700 hover:text-saffron-600 transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
             <button
               onClick={toggleCart}
               className="relative p-2 text-gray-700 hover:text-saffron-600 transition-colors"
@@ -96,20 +113,16 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-t">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              href="/"
-              className="block px-3 py-2 text-gray-700 hover:bg-saffron-50"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/products"
-              className="block px-3 py-2 text-gray-700 hover:bg-saffron-50"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Products
-            </Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="block px-3 py-2 text-gray-700 hover:bg-saffron-50"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
             {mounted && isAuthenticated ? (
               <button
                 onClick={() => {
