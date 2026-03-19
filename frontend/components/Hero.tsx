@@ -37,7 +37,7 @@ export default function Hero() {
         </div>
 
         <div className="mt-12 flex justify-center space-x-8 text-6xl md:text-8xl">
-          <span className="animate-bounce">🥒</span>
+          <span className="animate-bounce">🥭</span>
           <span className="animate-bounce delay-100">🌶️</span>
           <span className="animate-bounce delay-200">🫚</span>
           <span className="animate-bounce delay-300">🍬</span>
