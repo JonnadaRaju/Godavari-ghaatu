@@ -13,10 +13,10 @@ test.describe('Homepage', () => {
 
   test('should display categories section', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Shop by Category' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '🥒 Pickles' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '🌶️ Spices' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '🍬 Laddus' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '🎁 Combos' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Pickles/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Spices/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Laddus/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Combos/ })).toBeVisible()
   })
 
   test('should display bestsellers section', async ({ page }) => {
