@@ -5,7 +5,7 @@ import { adminApi } from '@/lib/api'
 import { useUIStore } from '@/lib/store'
 
 interface Product {
-  id: string
+  id: number
   name: string
   description: string
   price: number
@@ -14,6 +14,7 @@ interface Product {
   stock_quantity: number
   is_veg: boolean
   is_bestseller: boolean
+  is_new_arrival?: boolean
 }
 
 export default function AdminProductsPage() {
@@ -59,7 +60,7 @@ export default function AdminProductsPage() {
         price: Number(formData.price),
         stock_quantity: Number(formData.stock_quantity),
       }
-      
+
       if (editingProduct) {
         await adminApi.updateProduct(editingProduct.id, payload)
         showToast('Product updated successfully', 'success')
@@ -108,7 +109,7 @@ export default function AdminProductsPage() {
     setShowModal(true)
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this product?')) return
     try {
       await adminApi.deleteProduct(id)
@@ -147,12 +148,24 @@ export default function AdminProductsPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Category
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Price
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Stock
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -163,13 +176,27 @@ export default function AdminProductsPage() {
                 <td className="px-6 py-4 whitespace-nowrap">₹{product.price}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{product.stock_quantity}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs rounded-full ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}
+                  >
                     {product.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                  <button onClick={() => handleEdit(product)} className="text-blue-600 hover:text-blue-800">Edit</button>
-                  <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:text-red-800">Delete</button>
+                  <button
+                    onClick={() => handleEdit(product)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(product.id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
@@ -185,7 +212,9 @@ export default function AdminProductsPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
+            <h2 className="text-xl font-bold mb-4">
+              {editingProduct ? 'Edit Product' : 'Add Product'}
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -198,7 +227,9 @@ export default function AdminProductsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -208,7 +239,9 @@ export default function AdminProductsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price
+                  </label>
                   <input
                     type="number"
                     required
@@ -218,18 +251,24 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Stock
+                  </label>
                   <input
                     type="number"
                     required
                     value={formData.stock_quantity}
-                    onChange={(e) => setFormData({ ...formData, stock_quantity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, stock_quantity: Number(e.target.value) })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -255,7 +294,9 @@ export default function AdminProductsPage() {
                   <input
                     type="checkbox"
                     checked={formData.is_bestseller}
-                    onChange={(e) => setFormData({ ...formData, is_bestseller: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, is_bestseller: e.target.checked })
+                    }
                     className="rounded"
                   />
                   <span>Bestseller</span>
