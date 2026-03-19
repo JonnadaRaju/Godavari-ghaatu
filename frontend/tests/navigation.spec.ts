@@ -4,6 +4,10 @@ test.describe('Navigation', () => {
   test('should have working navbar', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('link', { name: 'Godavari Ghaatu' }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Pickles' }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Spices' }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Laddus' }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Combos' }).first()).toBeVisible()
   })
 
   test('should navigate to home from logo', async ({ page }) => {
