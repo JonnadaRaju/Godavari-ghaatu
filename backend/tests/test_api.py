@@ -126,6 +126,27 @@ def test_product(db, admin_user):
     return product
 
 
+@pytest.fixture
+def combo_product(db, admin_user):
+    product = Product(
+        id=uuid.uuid4(),
+        name="Family Combo",
+        description="Curated combo pack",
+        price=499.00,
+        stock_quantity=25,
+        image_url="https://example.com/combo.jpg",
+        category="combo",
+        is_veg=True,
+        is_bestseller=True,
+        is_new_arrival=False,
+        is_active=True
+    )
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
 class TestRootEndpoint:
     def test_root_endpoint(self, client):
         response = client.get("/")
@@ -491,6 +512,217 @@ class TestOrders:
         assert response.json()["status"] == "DELIVERED"
 
 
+class TestProductVariants:
+    def test_list_product_variants_empty(self, client, test_product):
+        response = client.get(f"/api/v1/products/{test_product.id}/variants")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_create_product_variant_as_admin(self, client, admin_token, test_product):
+        response = client.post(
+            f"/api/v1/products/{test_product.id}/variants",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "label": "500g",
+                "price": 320.00,
+                "stock_quantity": 40,
+                "is_active": True
+            }
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["label"] == "500g"
+        assert data["price"] == 320.0
+
+    def test_update_product_variant_as_admin(self, client, admin_token, test_product):
+        create_response = client.post(
+            f"/api/v1/products/{test_product.id}/variants",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "label": "250g",
+                "price": 180.00,
+                "stock_quantity": 25,
+                "is_active": True
+            }
+        )
+        variant_id = create_response.json()["id"]
+
+        response = client.put(
+            f"/api/v1/products/{test_product.id}/variants/{variant_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "label": "1kg",
+                "price": 600.00,
+                "stock_quantity": 12
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["label"] == "1kg"
+        assert data["price"] == 600.0
+        assert data["stock_quantity"] == 12
+
+    def test_delete_product_variant_as_admin(self, client, admin_token, test_product):
+        create_response = client.post(
+            f"/api/v1/products/{test_product.id}/variants",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "label": "Pack of 6",
+                "price": 250.00,
+                "stock_quantity": 15,
+                "is_active": True
+            }
+        )
+        variant_id = create_response.json()["id"]
+
+        response = client.delete(
+            f"/api/v1/products/{test_product.id}/variants/{variant_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+
+        assert response.status_code == 204
+
+        list_response = client.get(f"/api/v1/products/{test_product.id}/variants")
+        assert list_response.status_code == 200
+        assert list_response.json() == []
+
+
+class TestCombos:
+    def test_list_combo_items_empty(self, client, combo_product):
+        response = client.get(f"/api/v1/products/{combo_product.id}/combo-items")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_add_combo_item_as_admin(self, client, admin_token, combo_product, test_product):
+        response = client.post(
+            f"/api/v1/products/{combo_product.id}/combo-items",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "component_product_id": str(test_product.id),
+                "quantity": 2
+            }
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["component_product_id"] == str(test_product.id)
+        assert data["component_name"] == "Test Pickle"
+        assert data["quantity"] == 2
+
+    def test_update_combo_item_as_admin(self, client, admin_token, combo_product, test_product):
+        create_response = client.post(
+            f"/api/v1/products/{combo_product.id}/combo-items",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "component_product_id": str(test_product.id),
+                "quantity": 1
+            }
+        )
+        combo_item_id = create_response.json()["id"]
+
+        response = client.put(
+            f"/api/v1/products/{combo_product.id}/combo-items/{combo_item_id}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"quantity": 3}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["quantity"] == 3
+
+    def test_remove_combo_item_as_admin(self, client, admin_token, combo_product, test_product):
+        create_response = client.post(
+            f"/api/v1/products/{combo_product.id}/combo-items",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "component_product_id": str(test_product.id),
+                "quantity": 1
+            }
+        )
+        combo_item_id = create_response.json()["id"]
+
+        response = client.delete(
+            f"/api/v1/products/{combo_product.id}/combo-items/{combo_item_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+
+        assert response.status_code == 204
+
+        list_response = client.get(f"/api/v1/products/{combo_product.id}/combo-items")
+        assert list_response.status_code == 200
+        assert list_response.json() == []
+
+
+class TestPayments:
+    def test_get_upi_payment_info(self, client, auth_token, test_product):
+        client.post("/api/v1/cart/items",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "product_id": str(test_product.id),
+                "quantity": 2
+            })
+
+        order_response = client.post("/api/v1/orders",
+            headers={"Authorization": f"Bearer {auth_token}"})
+        order_id = order_response.json()["id"]
+
+        response = client.get(
+            f"/api/v1/payments/upi/{order_id}",
+            headers={"Authorization": f"Bearer {auth_token}"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["order_id"] == order_id[:8].upper()
+        assert data["qr_code"].startswith("data:image/png;base64,")
+
+    def test_upload_payment_screenshot(self, client, auth_token, test_product):
+        client.post("/api/v1/cart/items",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "product_id": str(test_product.id),
+                "quantity": 1
+            })
+
+        order_response = client.post("/api/v1/orders",
+            headers={"Authorization": f"Bearer {auth_token}"})
+        order_id = order_response.json()["id"]
+
+        response = client.post(
+            f"/api/v1/payments/upi/{order_id}/upload-screenshot",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            files={"file": ("payment.png", b"fake-image-content", "image/png")}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["order_id"] == order_id
+        assert data["filename"] == "payment.png"
+
+    def test_verify_payment_as_admin(self, client, auth_token, admin_token, test_product):
+        client.post("/api/v1/cart/items",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "product_id": str(test_product.id),
+                "quantity": 1
+            })
+
+        order_response = client.post("/api/v1/orders",
+            headers={"Authorization": f"Bearer {auth_token}"})
+        order_id = order_response.json()["id"]
+
+        response = client.post(
+            f"/api/v1/payments/verify/{order_id}",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "PAID"
+
+
 class TestWishlist:
     def test_add_to_wishlist(self, client, auth_token, test_product):
         response = client.post("/api/v1/wishlist",
@@ -544,6 +776,65 @@ class TestReviews:
         data = response.json()
         assert len(data) >= 1
 
+    def test_get_product_review_summary(self, client, auth_token, test_product):
+        client.post(f"/api/v1/products/{test_product.id}/reviews",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "rating": 5,
+                "comment": "Excellent product"
+            })
+
+        response = client.get(f"/api/v1/products/{test_product.id}/reviews/summary")
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "average_rating": 5.0,
+            "review_count": 1
+        }
+
+    def test_update_review(self, client, auth_token, test_product):
+        create_response = client.post(f"/api/v1/products/{test_product.id}/reviews",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "rating": 4,
+                "comment": "Good product"
+            })
+        review_id = create_response.json()["id"]
+
+        response = client.put(
+            f"/api/v1/products/{test_product.id}/reviews/{review_id}",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "rating": 5,
+                "comment": "Updated review"
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["rating"] == 5
+        assert data["comment"] == "Updated review"
+
+    def test_delete_review(self, client, auth_token, test_product):
+        create_response = client.post(f"/api/v1/products/{test_product.id}/reviews",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "rating": 3,
+                "comment": "Average product"
+            })
+        review_id = create_response.json()["id"]
+
+        response = client.delete(
+            f"/api/v1/products/{test_product.id}/reviews/{review_id}",
+            headers={"Authorization": f"Bearer {auth_token}"}
+        )
+
+        assert response.status_code == 204
+
+        list_response = client.get(f"/api/v1/products/{test_product.id}/reviews")
+        assert list_response.status_code == 200
+        assert list_response.json() == []
+
 
 class TestUsers:
     def test_get_current_user(self, client, auth_token):
@@ -564,6 +855,23 @@ class TestUsers:
         
         assert response.status_code == 200
         assert response.json()["full_name"] == "Updated Name"
+
+    def test_change_password(self, client, auth_token):
+        response = client.post("/api/v1/users/me/change-password",
+            headers={"Authorization": f"Bearer {auth_token}"},
+            json={
+                "current_password": "testpassword123",
+                "new_password": "newpassword456"
+            })
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Password changed successfully"
+
+        login_response = client.post("/api/v1/auth/login", json={
+            "email": "test@example.com",
+            "password": "newpassword456"
+        })
+        assert login_response.status_code == 200
 
 
 if __name__ == "__main__":
